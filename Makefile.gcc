@@ -1,0 +1,34 @@
+# Makefile for pcf2bdf (gcc)  -*- makefile -*-
+
+CC		= gcc
+#CFLAGS		= -Wall -g
+CFLAGS		= -Wall -O2
+CXX		= $(CC)
+CXXFLAGS	= $(CFLAGS)
+
+LATEX		= jlatex
+DVIPS		= dvips
+TAR		= tar
+GREP		= grep
+TAIL		= tail
+SED		= sed
+FIXEUCFONT	= fixeucfont
+
+all:		pcf2bdf
+
+pcf2bdf:	pcf2bdf.o
+
+clean:
+	-$(RM) pcf2bdf pcf2bdf.exe pcf2bdf.o pcf2bdf.obj pcf2bdf.cxx *~ \
+		pcf.aux pcf.dvi pcf.log pcf.toc
+
+pcf.dvi:	pcf.tex
+	$(LATEX) pcf.tex
+	$(LATEX) pcf.tex
+pcf.ps:		pcf.dvi
+	$(DVIPS) -f -P type1 pcf.dvi | $(FIXEUCFONT) > pcf.ps
+
+DISTRIB		= Makefile.* *.obj *.eps pcf.pdf pcf.tex pcf.txt pcf2bdf.cc
+
+distrib:	pcf.ps
+	$(TAR) cvzf pcf2bdf-`grep Version pcf.tex | tail -1 | sed 's/^Version \([^ ][^ ]*\) .*$$/\1/'`.tgz $(DISTRIB)
