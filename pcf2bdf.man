@@ -22,7 +22,7 @@ must be found in your PATH.
 .I bdftopcf
 , so
 .I pcf2bdf
-generate irresponsible values.
+generates irresponsible values.
 .SH OPTIONS
 .TP 8
 .B \-v

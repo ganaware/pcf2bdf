@@ -1,6 +1,6 @@
 # Makefile for pcf2bdf (gcc)  -*- makefile -*-
 
-CC		= gcc
+CC		= g++
 CFLAGS		= -Wall -O2
 CXX		= $(CC)
 CXXFLAGS	= $(CFLAGS)

@@ -25,7 +25,7 @@ DESCRIPTION
 	file as input, but gzip must be found in your PATH.
 
 	FONTBOUNDINGBOX in a BDF file is not used by bdftopcf , so
-	pcf2bdf generate irresponsible values.
+	pcf2bdf generates irresponsible values.
 
 OPTIONS
 	-v      very verbose output.
