@@ -1,44 +1,13 @@
 # Makefile for pcf2bdf (Visual C++ 5.0)  -*- makefile -*-
 
-# in order to make, run: nmake -f Makefile.vc
-# for no debugging info: nmake -f Makefile.vc nodebug=1
-
-APPVER		=	4.0
-TARGETOS	=	BOTH
-!include <win32.mak>
-
-LATEX		= platex
-DVIPS		= dvipsj
-TAR		= tar
+CXX		= cl
+CXXFLAGS	= /O2
 RM		= del
-GREP		= grep
-TAIL		= tail
-SED		= sed
-NKF		= nkf
 
-.cxx.obj:
-	$(cc) $(cdebug) $(cflags) $(cvars) /Tp$*.cxx
+all:		pcf2bdf
 
-all:		pcf2bdf.exe
-
-pcf2bdf.exe:	pcf2bdf.obj
-	$(link) $(ldebug) $(conlflags) $(conlibs) $** -out:$@
-pcf2bdf.cxx:	pcf2bdf.cc
-	$(NKF) -s < $** > $@
+pcf2bdf:	pcf2bdf.cc
+	$(CXX) $(CXXFLAGS) /Tppcf2bdf.cc
 
 clean:
-	-$(RM) pcf2bdf pcf2bdf.exe pcf2bdf.o pcf2bdf.obj pcf2bdf.cxx *~ \
-		pcf.aux pcf.dvi pcf.log pcf.toc
-
-pcf.dvi:	pcf.tex
-	$(LATEX) pcf.tex
-	$(LATEX) pcf.tex
-pcf.ps:		pcf.dvi
-	$(DVIPS) pcf.dvi > pcf.ps
-
-DISTRIB		= Makefile.* *.obj *.eps pcf.ps pcf.tex pcf.txt pcf2bdf.cc
-
-distrib:	pcf.ps
-	$(GREP) Version pcf.tex | $(TAIL) -1 | $(SED) "s/^Version \([^ ][^ ]*\) .*$$/$(TAR) cvzf pcf2bdf-\1.tgz $(DISTRIB)/" > distrib.bat
-	distrib.bat
-	$(RM) distrib.bat
+	-$(RM) pcf2bdf pcf2bdf.exe pcf2bdf.obj *~

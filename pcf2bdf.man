@@ -1,0 +1,39 @@
+.TH PCF2BDF 1
+.SH NAME
+pcf2bdf \- convert X font from Portable Compiled Format to Bitmap
+Distribution Format
+.SH SYNOPSIS
+.B pcf2bdf
+[
+.B \-v
+] [
+.B \-o
+.I outputfile
+] [ fontfile.pcf[.gz] ]
+.SH DESCRIPTION
+.I Pcf2bdf
+is a font de-compiler.  It converts X font from Portable Compiled
+Format (PCF) to Bitmap Distribution Format (BDF).  It can also accept 
+a compressed/gzipped PCF file as input, but
+.I gzip
+must be found in your PATH.
+
+.B FONTBOUNDINGBOX in a BDF file is not used by
+.I bdftopcf
+, so
+.I pcf2bdf
+generate irresponsible values.
+.SH OPTIONS
+.TP 8
+.B \-v
+very verbose output.
+.TP 8
+.BI "\-o " output-file-name
+By default
+.I pcf2bdf
+writes the bdf file to standard output; this option gives the name of a file
+to be used instead.
+.SH "SEE ALSO"
+bdftopcf(1), X(7)
+.SH AUTHOR
+TAGA Nayuta <nayuta@ganaware.jp>

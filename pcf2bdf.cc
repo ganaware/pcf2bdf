@@ -1,28 +1,27 @@
 // pcf2bdf.cc
 
 /*
- * 詳細は xc/lib/font/bitmap/pcfread.c,pcfwrite.c などを参照のこと
+ * see xc/lib/font/bitmap/pcfread.c,pcfwrite.c for detail
  */
 
-
-#ifdef WIN32 // Microsoft Visual C++
-#define MSVC
-#elif _WIN32 // Cygnus GNU Win32 gcc
-#define GNUWIN32
-#endif
-
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#if defined(MSVC)
-#include <io.h>
-#include <fcntl.h>
-#include <process.h>
-#elif defined(GNUWIN32)
-#include <sys/fcntl.h>
-extern "C" {
-int setmode(int handle, int mode);
-}
+
+#if defined(_MSC_VER) // Microsoft Visual C++
+#  include <io.h>
+#  include <fcntl.h>
+#  include <process.h>
+#  define popen _popen
+
+#elif defined(__CYGWIN__) // Cygnus GNU Win32 gcc
+#  include <io.h>
+#  include <sys/fcntl.h>
+#  define _setmode setmode
+
+#else
+#  define _setmode(fd, mode)
+
 #endif
 
 
@@ -37,7 +36,7 @@ typedef unsigned short uint16;
 typedef long int32;
 typedef unsigned long uint32;
 
-// 各セクションの ID
+// section ID
 enum type32 {
   PCF_PROPERTIES	= (1 << 0),
   PCF_ACCELERATORS	= (1 << 1),
@@ -50,43 +49,43 @@ enum type32 {
   PCF_BDF_ACCELERATORS	= (1 << 8),
 };
 
-// 各セクションのフォーマット
+// section format
 struct format32 {
-  uint32 id    :24;	// 下記の 4 つのうちどれか
+  uint32 id    :24;	// one of four constants below
   uint32 dummy :2;	// = 0 padding
-  uint32 scan  :2;	// (1 << scan) バイトごとに bitmap を読む
+  uint32 scan  :2;	// read bitmap by (1 << scan) bytes
   uint32 bit   :1;	// 0:LSBit first, 1:MSBit first
   uint32 byte  :1;	// 0:LSByte first, 1:MSByte first
-  uint32 glyph :2;	// 文字の 1 ラインは (1 << glyph) バイトアライン
+  uint32 glyph :2;	// a scanline of gryph is aligned by (1 << glyph) bytes
   bool is_little_endien(void) { return !byte; }
 };
-// format32.id は以下のうちのどれか
+// format32.id is:
 #define PCF_DEFAULT_FORMAT     0
 #define PCF_INKBOUNDS          2
 #define PCF_ACCEL_W_INKBOUNDS  1
 #define PCF_COMPRESSED_METRICS 1
-// BDF ファイルは, MSBit first かつ MSByte first で出力される
+// BDF file is outputed: MSBit first and MSByte first
 const format32 BDF_format = { PCF_DEFAULT_FORMAT, 0, 0, 1, 1, 0 };
 
-// 文字列か値
+// string or value
 union sv {
   char *s;
   int32 v;
 };
 
-// フォントのメトリック情報
+// metric informations
 struct metric_t
 {
-  int16	leftSideBearing;  // 文字の左端の座標
-  int16	rightSideBearing; // 文字の右端の座標
-  int16	characterWidth;   // 次の文字までの距離
-  int16	ascent;           // Baseline より上のドット数
-  int16	descent;          // Baseline より下のドット数
+  int16	leftSideBearing;  // leftmost coordinate of the gryph
+  int16	rightSideBearing; // rightmost coordinate of the gryph
+  int16	characterWidth;   // offset to next gryph
+  int16	ascent;           // pixels below baseline
+  int16	descent;          // pixels above Baseline
   int16	attributes;
   
-  byte8 *bitmaps;         // 文字パターン
+  byte8 *bitmaps;         // bitmap pattern of gryph
   int32 swidth;           // swidth
-  sv glyphName;          // この文字の名前
+  sv glyphName;           // name of gryph
   
   metric_t(void)
   {
@@ -94,11 +93,11 @@ struct metric_t
     glyphName.s = NULL;
   }
   
-  // 文字の幅
+  // gryph width
   int16 widthBits(void) { return rightSideBearing - leftSideBearing; }
-  // 文字の高さ
+  // gryph height
   int16 height(void) { return ascent + descent; }
-  // 文字パターン中で, 横 1 ラインを表すのに何バイト必要か
+  // byts for one scanline
   int16 widthBytes(format32 f)
   {
     return bytesPerRow(widthBits(), 1 << f.glyph);
@@ -125,23 +124,23 @@ struct metric_t
 // table of contents
 int32 nTables;
 struct table_t {
-  type32 type;		// このセクションの ID
-  format32 format;	// このセクションのフォーマット
-  int32 size;		// このセクションのサイズ
-  int32 offset;		// このセクションのファイル先頭からのオフセット
+  type32 type;		// section ID
+  format32 format;	// section format
+  int32 size;		// size of section
+  int32 offset;		// byte offset from the beginning of the file
 } *tables;
 
-// properties セクション
-int32 nProps;		// プロパティの数
-struct props_t {	// プロパティ
-  sv name;		// プロパティの名前
-  bool8 isStringProp;	// このプロパティが文字列かどうか
-  sv value;		// このプロパティの値
+// properties section
+int32 nProps;		// number of properties
+struct props_t {	// property
+  sv name;		// name of property
+  bool8 isStringProp;	// whether this property is a string (or a value)
+  sv value;		// the value of this property
 } *props;
-int32 stringSize;	// string のサイズ
-char *string;		// プロパティで使用される文字列
+int32 stringSize;	// size of string
+char *string;		// string used in property
 
-// accelerators セクション
+// accelerators section
 struct accelerators_t {
   bool8	   noOverlap;		/* true if:
 				 * max(rightSideBearing - characterWidth) <=
@@ -172,43 +171,43 @@ struct accelerators_t {
   metric_t ink_maxBounds;
 } accelerators;
 
-// metrics セクション
+// metrics section
 int32 nMetrics;
 metric_t *metrics;
 
-// bitmaps セクション
+// bitmaps section
 int32 nBitmaps;
 uint32 *bitmapOffsets;
 uint32 bitmapSizes[GLYPHPADOPTIONS];
-byte8 *bitmaps;		// 文字パターン
-int32 bitmapSize;	// bitmaps のサイズ
+byte8 *bitmaps;		// bitmap patterns of the gryph
+int32 bitmapSize;	// size of bitmaps
 
-// encodings セクション
+// encodings section
 int16 firstCol;
 int16 lastCol;
 int16 firstRow;
 int16 lastRow;
-int16 defaultCh;	// デフォルト文字
-int16 *encodings;	// 文字コードとメトリックの対応
-int nEncodings;		// encodings の数
-int nValidEncodings;	// encodings の中で有効な文字数
+int16 defaultCh;	// default character
+int16 *encodings;
+int nEncodings;		// number of encodings
+int nValidEncodings;	// number of valid encodings
 
-// swidths セクション
+// swidths section
 int32 nSwidths;
 
-// glyph names セクション
+// glyph names section
 int32 nGlyphNames;
 int32 glyphNamesSize;
 char *glyphNames;
 
 
 // other globals
-FILE *ifp;		// 入力ファイル
-FILE *ofp;		// 出力ファイル
-long read_bytes;	// 読み込んだバイト数
-format32 format;	// 現在処理中のセクションのフォーマット
-metric_t fontbbx;	// フォントのバウンディングボックス
-bool verbose;		// メッセージを表示するか
+FILE *ifp;		// input file pointer
+FILE *ofp;		// output file pointer
+long read_bytes;	// read bytes
+format32 format;	// current section format
+metric_t fontbbx;	// font bounding box
+bool verbose;		// show messages verbosely
 
 
 // miscellaneous functions ////////////////////////////////////////////////////
@@ -383,7 +382,7 @@ void four_byte_swap(byte8 *data, int size)
 // main ///////////////////////////////////////////////////////////////////////
 
 
-// type のセクションを探す
+// search and seek a section of 'type'
 bool seek(type32 type)
 {
   for (int i = 0; i < nTables; i++)
@@ -399,7 +398,7 @@ bool seek(type32 type)
 }
 
 
-// type のセクションが存在するかどうか
+// does a section of 'type' exist?
 bool is_exist_section(type32 type)
 {
   for (int i = 0; i < nTables; i++)
@@ -409,7 +408,7 @@ bool is_exist_section(type32 type)
 }
 
 
-// メトリック情報を読む
+// read metric information
 void read_metric(metric_t *m)
 {
   m->leftSideBearing  = read_int16();
@@ -421,7 +420,7 @@ void read_metric(metric_t *m)
 }
 
 
-// 圧縮されたメトリック情報を読む
+// read compressed metric information
 void read_compressed_metric(metric_t *m)
 {
   m->leftSideBearing  = (int16)read_uint8() - 0x80;
@@ -447,7 +446,7 @@ void verbose_metric(metric_t *m, const char *name)
 }
 
 
-// accelerators セクションを読む
+// read accelerators section
 void read_accelerators(void)
 {
   format = read_format32_little();
@@ -502,7 +501,7 @@ void read_accelerators(void)
 }
 
 
-// name という名前のプロパティを探し, 文字列プロパティならその値を返す
+// search a property named 'name', and return its string if it is a string
 char *get_property_string(char *name)
 {
   for (int i = 0; i < nProps; i++)
@@ -517,7 +516,7 @@ char *get_property_string(char *name)
 }
 
 
-// name という名前のプロパティを探し, 数のプロパティならその値を返す
+// search a property named 'name', and return its value if it is a value
 int32 get_property_value(char *name)
 {
   for (int i = 0; i < nProps; i++)
@@ -532,7 +531,7 @@ int32 get_property_value(char *name)
 }
 
 
-// name という名前のプロパティが存在するかどうか
+// does a property named 'name' exist?
 bool is_exist_property_value(char *name)
 {
   for (int i = 0; i < nProps; i++)
@@ -560,7 +559,7 @@ int main(int argc, char *argv[])
   char *ifilename = NULL;
   char *ofilename = NULL;
   
-  // オプション解析
+  // read options
   for (i = 1; i < argc; i++)
   {
     if (argv[i][0] == '-')
@@ -584,11 +583,7 @@ int main(int argc, char *argv[])
   }
   else
   {
-#if defined(MSVC)
-    _setmode(fileno(stdin), _O_BINARY);
-#elif defined(GNUWIN32)
-    setmode(fileno(stdin), O_BINARY);
-#endif
+    _setmode(fileno(stdin), O_BINARY);
     ifp = stdin;
   }
   int32 version = read_int32_big();
@@ -600,14 +595,8 @@ int main(int argc, char *argv[])
     fclose(ifp);
     char buf[1024];
     sprintf(buf, "gzip -dc %s", ifilename); // TODO
-#if defined(MSVC)
-    ifp = _popen(buf, "rb");
-#else
-    ifp = popen(buf, "r");
-#if defined(GNUWIN32)
-    setmode(fileno(ifp), O_BINARY);
-#endif
-#endif
+    ifp = popen(buf, "rb");
+    _setmode(fileno(ifp), O_BINARY);
     read_bytes = 0;
     if (!ifp)
       return error_exit("failed to execute gzip\n");
@@ -622,9 +611,9 @@ int main(int argc, char *argv[])
   else
     ofp = stdout;
   
-  // PCF ファイルを読む ///////////////////////////////////////////////////////
+  // read PCF file ////////////////////////////////////////////////////////////
   
-  // table of contents を読む
+  // read table of contents
   if (read_bytes == 0)
     version = read_int32_big();
   if (version != make_int32(1, 'f', 'c', 'p'))
@@ -639,7 +628,7 @@ int main(int argc, char *argv[])
     tables[i].offset = read_int32_little();
   }
   
-  // properties セクションを読む
+  // read properties section
   if (!seek(PCF_PROPERTIES))
     error_exit("PCF_PROPERTIES does not found");
   else
@@ -681,7 +670,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "%ld\n", props[i].value.v);
   }
   
-  // 古い accelerators セクションを読む
+  // read old accelerators section
   if (!is_exist_section(PCF_BDF_ACCELERATORS))
     if (!seek(PCF_ACCELERATORS))
       error_exit("PCF_ACCELERATORS and PCF_BDF_ACCELERATORS do not found");
@@ -695,7 +684,7 @@ int main(int argc, char *argv[])
     if (verbose)
       fprintf(stderr, "(PCF_ACCELERATORS)\n");
   
-  // metrics セクションを読む
+  // read metrics section
   if (!seek(PCF_METRICS))
     error_exit("PCF_METRICS does not found");
   else
@@ -736,7 +725,7 @@ int main(int argc, char *argv[])
       fontbbx.descent = metrics[i].descent;
   }
   
-  // bitmaps セクションを読む
+  // read bitmaps section
   if (!seek(PCF_BITMAPS))
     error_exit("PCF_BITMAPS does not found");
   else
@@ -754,7 +743,7 @@ int main(int argc, char *argv[])
   bitmapSize = bitmapSizes[format.glyph];
   check_memory((bitmaps = new byte8[bitmapSize]));
   read_byte8s(bitmaps, bitmapSize);
-  // 文字パターンの中身を BDF に適合するようにする
+  //
   if (verbose)
   {
     fprintf(stderr, "\t1<<format.scan = %d\n", 1 << format.scan);
@@ -784,16 +773,16 @@ int main(int argc, char *argv[])
 	four_byte_swap(bitmaps, bitmapSize);
 	break;
     }
-  // メトリックに文字パターンを関連づける
+  //
   for (i = 0; i < nMetrics; i++)
   {
     metric_t &m = metrics[i];
     m.bitmaps = bitmaps + bitmapOffsets[i];
   }
   
-  // ink metrics セクションは読まない
+  // ink metrics section is ignored
   
-  // encodings セクションを読む
+  // read encodings section
   if (!seek(PCF_BDF_ENCODINGS))
     error_exit("PCF_BDF_ENCODINGS does not found");
   else
@@ -824,7 +813,7 @@ int main(int argc, char *argv[])
       nValidEncodings ++;
   }
 
-  // swidths セクションを読む
+  // read swidths section
   if (seek(PCF_SWIDTHS))
   {
     if (verbose)
@@ -851,7 +840,7 @@ int main(int argc, char *argv[])
 	(int)(metrics[i].characterWidth / (rx / 72.27) / (p / 1000));
   }
   
-  // glyph names セクションを読む
+  // read glyph names section
   if (seek(PCF_GLYPH_NAMES))
   {
     if (verbose)
@@ -879,7 +868,7 @@ int main(int argc, char *argv[])
     if (verbose)
       fprintf(stderr, "no PCF_GLYPH_NAMES\n");
   
-  // BDF style accelerators セクションを読む
+  // read BDF style accelerators section
   if (seek(PCF_BDF_ACCELERATORS))
   {
     if (verbose)
