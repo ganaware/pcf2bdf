@@ -19,4 +19,4 @@ install:	all
 	-@if [ ! -d $(BINPATH)  ]; then mkdir -p $(BINPATH); fi
 	install -m 755 pcf2bdf $(BINPATH)
 	-@if [ ! -d $(MANPATH)  ]; then mkdir -p $(MANPATH); fi
-	install -m 644 pcf2bdf.man $(MANPATH)
+	install -m 644 pcf2bdf.man $(MANPATH)/pcf2bdf.1
