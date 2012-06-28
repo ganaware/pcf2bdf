@@ -262,26 +262,29 @@ uint8 read_uint8(void)
 }
 
 
-int16 make_int16(int a, int b)
+/* These all return int rather than int16 in order to handle values
+ * between 32768 and 65535 more gracefully.
+ */
+int make_int16(int a, int b)
 {
-  int16 value;
-  value  = (int16)(a & 0xff) << 8;
-  value |= (int16)(b & 0xff);
+  int value;
+  value  = (a & 0xff) << 8;
+  value |= (b & 0xff);
   return value;
 }
-int16 read_int16_big(void)
+int read_int16_big(void)
 {
   int a = read8();
   int b = read8();
   return make_int16(a, b);
 }
-int16 read_int16_little(void)
+int read_int16_little(void)
 {
   int a = read8();
   int b = read8();
   return make_int16(b, a);
 }
-int16 read_int16(void)
+int read_int16(void)
 {
   if (format.is_little_endien())
     return read_int16_little();
