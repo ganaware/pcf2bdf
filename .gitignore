@@ -1,0 +1,9 @@
+*.bdf
+*.orig
+*.pcf
+*.rej
+*~
+.DS_Store
+pcf2bdf
+pcf2bdf.exe
+pcf2bdf.o
