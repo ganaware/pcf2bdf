@@ -213,13 +213,13 @@ bool verbose;		// show messages verbosely
 // miscellaneous functions ////////////////////////////////////////////////////
 
 
-int error_exit(char *str)
+int error_exit(const char *str)
 {
   fprintf(stderr, "pcf2bdf: %s\n", str);
   exit(1);
   return 1;
 }
-int error_invalid_exit(char *str)
+int error_invalid_exit(const char *str)
 {
   fprintf(stderr, "pcf2bdf: <%s> invalid PCF file\n", str);
   exit(1);
@@ -505,7 +505,7 @@ void read_accelerators(void)
 
 
 // search a property named 'name', and return its string if it is a string
-char *get_property_string(char *name)
+char *get_property_string(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
@@ -520,7 +520,7 @@ char *get_property_string(char *name)
 
 
 // search a property named 'name', and return its value if it is a value
-int32 get_property_value(char *name)
+int32 get_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
@@ -535,7 +535,7 @@ int32 get_property_value(char *name)
 
 
 // does a property named 'name' exist?
-bool is_exist_property_value(char *name)
+bool is_exist_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
