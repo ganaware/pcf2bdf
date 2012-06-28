@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
     fclose(ifp);
     char buf[1024];
     sprintf(buf, "gzip -dc %s", ifilename); // TODO
-    ifp = popen(buf, "rb");
+    ifp = popen(buf, "r");
     _setmode(fileno(ifp), O_BINARY);
     read_bytes = 0;
     if (!ifp)
