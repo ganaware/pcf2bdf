@@ -1,13 +1,16 @@
 // -*- c++ -*-
 
 
-// PCF File Format from /xc/lib/font/bitmap/pcfread.c,pcfwrite.c
+// PCF File Format from libXfont-1.4.5
+//	include/X11/fonts/pcf.h
+//	src/bitmap/pcfread.c
+//	src/bitmap/pcfwrite.c
 
 
 // miscellaneous definition ///////////////////////////////////////////////////
 
-/* Type names are 'TypeSize_Endien'.
- *	name		Type		Size(bits)	Endien
+/* Type names are formatted as 'TypeSize_Endian'.
+ *	name		Type		Size(bits)	Endian
  *	---------------	---------------	---------------	-------
  *	char8		char		8		none
  *	bool8		bool		8		none
@@ -15,9 +18,11 @@
  *	type32_little	type32		32		big
  *	format32_little	format32	32		big
  * etc.
- * In the *SECTION*, the endieness is determined by the format.byte
+ * In the *SECTION*, the endianess is determined by the format.byte
  */
 
+
+#define PCF_FILE_VERSION	(('p'<<24)|('c'<<16)|('f'<<8)|1)
 
 enum type32 {
   PCF_PROPERTIES	= (1 << 0),
@@ -45,6 +50,14 @@ struct format32 {
 #define PCF_ACCEL_W_INKBOUNDS  1
 #define PCF_COMPRESSED_METRICS 1
 
+typedef struct _PCFTable
+{
+  type32_little	type;	// type of this section
+  format32_little	format;	// format of this section
+  int32_little	size;	// size of this section
+  int32_little	offset;	// offset of this section from the begining of the file
+} PCFTableRec;
+
 struct metric_t
 {
   int16	leftSideBearing;
@@ -52,7 +65,7 @@ struct metric_t
   int16	characterWidth;
   int16	ascent;
   int16	descent;
-  int16	attributes;
+  uint16	attributes;
 };
 struct compressedMetric_t
 {
@@ -71,27 +84,24 @@ struct compressedMetric_t
 // begining of the PCF file ///////////////////////////////////////////////////
 
 // table of contents
-char8[4]	version = { 'p', 'c', 'f', 1 };
-int32_little	nTables;
-struct table_t {	// sections
-  type32_little	type;	// type of this section
-  format32_little	format;	// format of this section
-  int32_little	size;	// size of this section
-  int32_little	offset;	// offset of this section from the begining of the file
-}		tables[nTables];
+uint32_little	version = PCF_FILE_VERSION;
+int32_little	nTables;	// 1 <= nTables <= 134217727
+//	note: 134217727 == INT32_MAX / sizeof(PCFTableRec) == 0x7fffffff / 16
+PCFTableRec	tables[nTables];
 
 /*** SECTION ***/
 // properties section (tables[i].type = PCF_PROPERTIES)
 format32_little	format; 	// format.id = PCF_DEFAULT_FORMAT
-int32		nProps;
-struct {
-  int32		name;		// offset from &string[0]
-  bool8		isStringProp;	// is this property is string ?
-  int32		value;		// isStringProp ? offset from &string[0]
+int32		nProps;		// 1 <= nProps <= 268435455
+//	note: 268435455 == INT32_MAX / sizeof(FontPropRec) == 0x7fffffff / 8
+struct property_t {
+  int32		name;		// offset from &string[0] (0 <= name)
+  bool8		isStringProp;	// is this property is string ? (0 or 1)
+  int32		value;		// offset from &string[0] if isStringProp is 1
 }		props[nProps];
 byte8		dummy[3 - ((sizeof(props) + 3) % 4)];	// padding
-int32		stringSize;
-char8		string[stringSize];	// pointed by property_t.{name,value}
+int32		stringSize;	// 0 <= stringSize
+char8		string[stringSize];	// pointed by property_t::{name,value}
 
 /*** SECTION ***/
 // old accelerators section (tables[i].type = PCF_ACCELERATORS)
@@ -121,10 +131,11 @@ metric_t	ink_maxBounds;
 format32_little	format;		// format.id = PCF_DEFAULT_FORMAT
 //				//          or PCF_COMPRESSEDMETRICS
 #if format.id == PCF_DEFAULT_FORMAT
-int32		nMetrics;
+int32		nMetrics;	// 0 <= nMetrics <= 134217727
+//	note: 134217727 == INT32_MAX / sizeof(CharInfoRec) == 0x7fffffff / 16
 metric_t	metrics[nMetrics];
 #else
-int16		nMetrics;
+uint16		nMetrics;	// 0 <= nMetrics <= 65535
 compressedMetric_t	cmetrics[nMetrics];
 #end
 
@@ -136,7 +147,7 @@ uint32		bitmapOffsets[nBitmaps];
 uint32		bitmapSizes[GLYPHPADOPTIONS];
 byte8		bitmaps[bitmapSizes[format.glyph]];
 /* if (format.bit != THIS_MACHINE.bit)
- *   BitOrderInvert(bitmaps, sizeof(bitmaps));
+ *   BitOrderInvert(bitmaps, bitmapSizes[format.glyph]);
  * if ((format.bit == format.byte) != 
  *     (THIS_MACHINE.bit == THIS_MACHINE.byte)) {
  *   switch (1 << (THIS_MACHINE.bit == THIS_MACHINE.byte ?
@@ -156,12 +167,12 @@ byte8		bitmaps[bitmapSizes[format.glyph]];
 /*** SECTION ***/
 // encodings section (tables[i].type = PCF_BDF_ENCODINGS)
 format32_little	format;		// format.id = PCF_DEFAULT_FORMAT
-int16		firstCol;
-int16		lastCol;
-int16		firstRow;
-int16		lastRow;
-int16		defaultCh;	// default char or NO_SUCH_CHAR (= -1)
-int16		encodings[n];
+uint16		firstCol;
+uint16		lastCol;
+uint16		firstRow;
+uint16		lastRow;
+uint16		defaultCh;	// default char or NO_SUCH_CHAR (= -1)
+uint16		encodingOffset[(lastCol-firstCol+1)*(lastRow-firstRow+1)];
 /*            |0 firstCol  lastCol 255
  * row\column |v v         v       v
  * -----------+---------------------
@@ -173,7 +184,7 @@ int16		encodings[n];
  *       255->|
  *
  * The charcode MAKE_CHARCODE(firstCol, firstRow)'s metrics is metrics[B].
- * And, encodings = { B,C,D,E,F,G, J,K,L,M,N,O, R,S,T,U,V,W, Z,a,b,c,d,e, };
+ * And, encodingOffset={ B,C,D,E,F,G, J,K,L,M,N,O, R,S,T,U,V,W, Z,a,b,c,d,e, };
  * If Z == 0xffff, then the charcode MAKE_CHARCODE(firstCol, lastRow) does not
  * exist. */
 
