@@ -81,7 +81,7 @@ struct metric_t
   int16	characterWidth;   // offset to next gryph
   int16	ascent;           // pixels below baseline
   int16	descent;          // pixels above Baseline
-  int16	attributes;
+  uint16	attributes;
 
   byte8 *bitmaps;         // bitmap pattern of gryph
   int32 swidth;           // swidth
@@ -115,7 +115,7 @@ struct metric_t
 #define GLYPHPADOPTIONS 4
 
 #define make_charcode(row,col) (row * 256 + col)
-#define NO_SUCH_CHAR (int16)0xffff
+#define NO_SUCH_CHAR 0xffff
 
 
 // global variables ///////////////////////////////////////////////////////////
@@ -183,12 +183,12 @@ byte8 *bitmaps;		// bitmap patterns of the gryph
 int32 bitmapSize;	// size of bitmaps
 
 // encodings section
-int16 firstCol;
-int16 lastCol;
-int16 firstRow;
-int16 lastRow;
-int16 defaultCh;	// default character
-int16 *encodings;
+uint16 firstCol;
+uint16 lastCol;
+uint16 firstRow;
+uint16 lastRow;
+uint16 defaultCh;	// default character
+uint16 *encodings;
 int nEncodings;		// number of encodings
 int nValidEncodings;	// number of valid encodings
 
@@ -589,7 +589,7 @@ int main(int argc, char *argv[])
     _setmode(fileno(stdin), O_BINARY);
     ifp = stdin;
   }
-  int32 version = read_int32_big();
+  uint32 version = read_int32_big();
   if ((version >> 16) == 0x1f9d || // compress'ed
       (version >> 16) == 0x1f8b)    // gzip'ed
   {
@@ -808,7 +808,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "\tdefaultCh = %X\n", defaultCh);
   }
   nEncodings = (lastCol - firstCol + 1) * (lastRow - firstRow + 1);
-  check_memory((encodings = new int16[nEncodings]));
+  check_memory((encodings = new uint16[nEncodings]));
   for (i = 0; i < nEncodings; i++)
   {
     encodings[i] = read_int16();
