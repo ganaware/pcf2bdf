@@ -1,7 +1,7 @@
 // pcf2bdf.cc
 
 /*
- * see xc/lib/font/bitmap/pcfread.c,pcfwrite.c for detail
+ * see libXfont-1.4.5: src/bitmap/pcfread.c, pcfwrite.c, bcfread.c
  */
 
 #include <stdio.h>
@@ -891,7 +891,8 @@ int main(int argc, char *argv[])
   if (!is_exist_property_value("RESOLUTION_X") ||
       !is_exist_property_value("RESOLUTION_Y"))
     rx = ry = (int)(get_property_value("RESOLUTION") / 100.0 * 72.27) ;
-  fprintf(ofp, "SIZE %ld %ld %ld\n", get_property_value("PIXEL_SIZE"), rx, ry);
+  fprintf(ofp, "SIZE %ld %ld %ld\n",
+	  get_property_value("POINT_SIZE") / 10, rx, ry);
   fprintf(ofp, "FONTBOUNDINGBOX %d %d %d %d\n\n",
 	  fontbbx.widthBits(), fontbbx.height(),
 	  fontbbx.leftSideBearing, -fontbbx.descent);
