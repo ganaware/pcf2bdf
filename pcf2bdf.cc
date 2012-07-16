@@ -57,7 +57,7 @@ struct format32 {
   uint32 bit   :1;	// 0:LSBit first, 1:MSBit first
   uint32 byte  :1;	// 0:LSByte first, 1:MSByte first
   uint32 glyph :2;	// a scanline of gryph is aligned by (1 << glyph) bytes
-  bool is_little_endien(void) { return !byte; }
+  bool is_little_endian(void) { return !byte; }
 };
 // format32.id is:
 #define PCF_DEFAULT_FORMAT     0
@@ -82,17 +82,17 @@ struct metric_t
   int16	ascent;           // pixels below baseline
   int16	descent;          // pixels above Baseline
   int16	attributes;
-  
+
   byte8 *bitmaps;         // bitmap pattern of gryph
   int32 swidth;           // swidth
   sv glyphName;           // name of gryph
-  
+
   metric_t(void)
   {
     bitmaps = NULL;
     glyphName.s = NULL;
   }
-  
+
   // gryph width
   int16 widthBits(void) { return rightSideBearing - leftSideBearing; }
   // gryph height
@@ -286,7 +286,7 @@ int read_int16_little(void)
 }
 int read_int16(void)
 {
-  if (format.is_little_endien())
+  if (format.is_little_endian())
     return read_int16_little();
   else
     return read_int16_big();
@@ -320,7 +320,7 @@ int32 read_int32_little(void)
 }
 int32 read_int32(void)
 {
-  if (format.is_little_endien())
+  if (format.is_little_endian())
     return read_int32_little();
   else
     return read_int32_big();
@@ -561,7 +561,7 @@ int main(int argc, char *argv[])
   int i;
   char *ifilename = NULL;
   char *ofilename = NULL;
-  
+
   // read options
   for (i = 1; i < argc; i++)
   {
@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
     if (!ifp)
       return error_exit("failed to execute gzip\n");
   }
-  
+
   if (ofilename)
   {
     ofp = fopen(ofilename, "wb");
@@ -613,9 +613,9 @@ int main(int argc, char *argv[])
   }
   else
     ofp = stdout;
-  
+
   // read PCF file ////////////////////////////////////////////////////////////
-  
+
   // read table of contents
   if (read_bytes == 0)
     version = read_int32_big();
@@ -918,7 +918,16 @@ int main(int argc, char *argv[])
       continue;
     fprintf(ofp, "%s ", props[i].name.s);
     if (props[i].isStringProp)
-      fprintf(ofp, "\"%s\"\n", props[i].value.s);
+    {
+      fprintf(ofp, "\"");
+      for (const char *p = props[i].value.s; *p; ++ p)
+      {
+	if (*p == '"')
+	  fprintf(ofp, "\"");
+	fprintf(ofp, "%c", *p);
+      }
+      fprintf(ofp, "\"\n");
+    }
     else
       fprintf(ofp, "%ld\n", props[i].value.v);
   }
