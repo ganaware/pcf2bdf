@@ -39,7 +39,7 @@ SEE ALSO
 	bdftopcf(1), X(7)
 
 COPYRIGHT
-	Copyright (c) 2002, TAGA Nayuta <nayuta@ganaware.jp>
+	Copyright (c) 2002, 2015, TAGA Nayuta <nayuta@ganaware.jp>
 	
 	Permission is hereby granted, free of charge, to any person
 	obtaining a copy of this software and associated documentation
@@ -62,3 +62,25 @@ COPYRIGHT
 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+HISTORY
+
+	1.05 2015/05/18
+
+	- The size should come from POINT_SIZE instead of PIXEL_SIZE.
+	- Internal quotation characters in a string property should be
+	  indicated (or "quoted”) by using two quotation characters
+	  in a row.
+	- Fix avoid crash with large compressed metrics tables.
+	  (Colin Watson)
+	- Fix support gzipped source.
+	  (Colin Watson)
+	- Fix use C++ compiler and simplify using GNU extensions.
+	  (Jonas Smedegaard)
+	- other fixes.
+
+	1.04 2002/10/21
+	1.03 1999/03/01
+	1.02 1998/04/27
+	1.01 1998/03/21
+	1.00 1998/03/16
