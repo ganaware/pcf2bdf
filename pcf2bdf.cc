@@ -33,8 +33,8 @@ typedef unsigned char uint8;
 typedef unsigned char byte8;
 typedef short int16;
 typedef unsigned short uint16;
-typedef long int32;
-typedef unsigned long uint32;
+typedef int int32;
+typedef unsigned int uint32;
 
 // section ID
 enum type32 {
@@ -509,11 +509,12 @@ char *get_property_string(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0)
+    if (strcmp(name, props[i].name.s) == 0) {
       if (props[i].isStringProp)
 	return props[i].value.s;
       else
 	error_invalid_exit("property_string");
+    }
   }
   return NULL;
 }
@@ -524,11 +525,12 @@ int32 get_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0)
+    if (strcmp(name, props[i].name.s) == 0) {
       if (props[i].isStringProp)
 	error_invalid_exit("property_value");
       else
 	return props[i].value.v;
+    }
   }
   return -1;
 }
@@ -539,11 +541,12 @@ bool is_exist_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0)
+    if (strcmp(name, props[i].name.s) == 0) {
       if (props[i].isStringProp)
 	return false;
       else
 	return true;
+    }
   }
   return false;
 }
@@ -589,7 +592,7 @@ int main(int argc, char *argv[])
     _setmode(fileno(stdin), O_BINARY);
     ifp = stdin;
   }
-  uint32 version = read_int32_big();
+  int32 version = read_int32_big();
   if ((version >> 16) == 0x1f9d || // compress'ed
       (version >> 16) == 0x1f8b)    // gzip'ed
   {
@@ -670,7 +673,7 @@ int main(int argc, char *argv[])
     }
     else
       if (verbose)
-	fprintf(stderr, "%ld\n", props[i].value.v);
+	fprintf(stderr, "%d\n", props[i].value.v);
   }
   
   // read old accelerators section
@@ -714,7 +717,7 @@ int main(int argc, char *argv[])
       break;
   }
   if (verbose)
-    fprintf(stderr, "\tnMetrics = %ld\n", nMetrics);
+    fprintf(stderr, "\tnMetrics = %d\n", nMetrics);
   fontbbx = metrics[0];
   for (i = 1; i < nMetrics; i++)
   {
@@ -891,7 +894,7 @@ int main(int argc, char *argv[])
   if (!is_exist_property_value("RESOLUTION_X") ||
       !is_exist_property_value("RESOLUTION_Y"))
     rx = ry = (int)(get_property_value("RESOLUTION") / 100.0 * 72.27) ;
-  fprintf(ofp, "SIZE %ld %ld %ld\n",
+  fprintf(ofp, "SIZE %d %d %d\n",
 	  get_property_value("POINT_SIZE") / 10, rx, ry);
   fprintf(ofp, "FONTBOUNDINGBOX %d %d %d %d\n\n",
 	  fontbbx.widthBits(), fontbbx.height(),
@@ -908,7 +911,7 @@ int main(int argc, char *argv[])
       is_exist_property_value("RESOLUTION"))
     nPropsd --;
     
-  fprintf(ofp, "STARTPROPERTIES %ld\n", nProps + nPropsd);
+  fprintf(ofp, "STARTPROPERTIES %d\n", nProps + nPropsd);
   for (i = 0; i < nProps; i++)
   {
     if (strcmp(props[i].name.s, "FONT") == 0)
@@ -930,16 +933,16 @@ int main(int argc, char *argv[])
       fprintf(ofp, "\"\n");
     }
     else
-      fprintf(ofp, "%ld\n", props[i].value.v);
+      fprintf(ofp, "%d\n", props[i].value.v);
   }
   
   if (!is_exist_property_value("DEFAULT_CHAR") &&
       defaultCh != NO_SUCH_CHAR)
     fprintf(ofp, "DEFAULT_CHAR %d\n", defaultCh);
   if (!is_exist_property_value("FONT_DESCENT"))
-    fprintf(ofp, "FONT_DESCENT %ld\n", accelerators.fontDescent);
+    fprintf(ofp, "FONT_DESCENT %d\n", accelerators.fontDescent);
   if (!is_exist_property_value("FONT_ASCENT"))
-    fprintf(ofp, "FONT_ASCENT %ld\n", accelerators.fontAscent);
+    fprintf(ofp, "FONT_ASCENT %d\n", accelerators.fontAscent);
   fprintf(ofp, "ENDPROPERTIES\n\n");
   
   fprintf(ofp, "CHARS %d\n\n", nValidEncodings);
@@ -960,7 +963,7 @@ int main(int argc, char *argv[])
     else
       fprintf(ofp, "STARTCHAR %04X\n", charcode);
     fprintf(ofp, "ENCODING %d\n", charcode);
-    fprintf(ofp, "SWIDTH %ld %d\n", m.swidth, 0);
+    fprintf(ofp, "SWIDTH %d %d\n", m.swidth, 0);
     fprintf(ofp, "DWIDTH %d %d\n", m.characterWidth, 0);
     fprintf(ofp, "BBX %d %d %d %d\n",
 	    m.widthBits(), m.height(), m.leftSideBearing, -m.descent);
