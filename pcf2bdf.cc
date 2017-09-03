@@ -509,12 +509,11 @@ char *get_property_string(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0) {
+    if (strcmp(name, props[i].name.s) == 0)
       if (props[i].isStringProp)
 	return props[i].value.s;
       else
 	error_invalid_exit("property_string");
-    }
   }
   return NULL;
 }
@@ -525,12 +524,11 @@ int32 get_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0) {
+    if (strcmp(name, props[i].name.s) == 0)
       if (props[i].isStringProp)
 	error_invalid_exit("property_value");
       else
 	return props[i].value.v;
-    }
   }
   return -1;
 }
@@ -541,12 +539,11 @@ bool is_exist_property_value(const char *name)
 {
   for (int i = 0; i < nProps; i++)
   {
-    if (strcmp(name, props[i].name.s) == 0) {
+    if (strcmp(name, props[i].name.s) == 0)
       if (props[i].isStringProp)
 	return false;
       else
 	return true;
-    }
   }
   return false;
 }
