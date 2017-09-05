@@ -228,7 +228,9 @@ int error_invalid_exit(const char *str)
 int check_memory(void *ptr)
 {
   if (!ptr)
+  {
     return error_exit("out of memory");
+  }
   return 0;
 }
 
@@ -237,7 +239,9 @@ byte8 *read_byte8s(byte8 *mem, size_t size)
 {
   size_t read_size =  fread(mem, 1, size, ifp);
   if (read_size != size)
+  {
     error_exit("unexpected eof");
+  }
   read_bytes += size;
   return mem;
 }
@@ -248,7 +252,9 @@ char read8(void)
   int a = fgetc(ifp);
   read_bytes ++;
   if (a == EOF)
+  {
     return (char)error_exit("unexpected eof");
+  }
   return (char)a;
 }
 bool8 read_bool8(void)
@@ -286,9 +292,13 @@ int read_int16_little(void)
 int read_int16(void)
 {
   if (format.is_little_endian())
+  {
     return read_int16_little();
+  }
   else
+  {
     return read_int16_big();
+  }
 }
 
 
@@ -320,9 +330,13 @@ int32 read_int32_little(void)
 int32 read_int32(void)
 {
   if (format.is_little_endian())
+  {
     return read_int32_little();
+  }
   else
+  {
     return read_int32_big();
+  }
 }
 uint32 read_uint32(void)
 {
@@ -345,7 +359,9 @@ format32 read_format32_little(void)
 void skip(int n)
 {
   for (; 0 < n; n--)
+  {
     read8();
+  }
 }
 
 
@@ -354,7 +370,9 @@ void bit_order_invert(byte8 *data, int size)
   static const byte8 invert[16] =
   { 0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15 };
   for (int i = 0; i < size; i++)
+  {
     data[i] = (invert[data[i] & 15] << 4) | invert[(data[i] >> 4) & 15];
+  }
 }
 void two_byte_swap(byte8 *data, int size)
 {
@@ -388,14 +406,18 @@ void four_byte_swap(byte8 *data, int size)
 bool seek(type32 type)
 {
   for (int i = 0; i < nTables; i++)
+  {
     if (tables[i].type == type)
     {
       int s = tables[i].offset - read_bytes;
       if (s < 0)
+      {
 	error_invalid_exit("seek");
+      }
       skip(s);
       return true;
     }
+  }
   return false;
 }
 
@@ -404,8 +426,12 @@ bool seek(type32 type)
 bool is_exist_section(type32 type)
 {
   for (int i = 0; i < nTables; i++)
+  {
     if (tables[i].type == type)
+    {
       return true;
+    }
+  }
   return false;
 }
 
@@ -454,7 +480,9 @@ void read_accelerators(void)
   format = read_format32_little();
   if (!(format.id == PCF_DEFAULT_FORMAT ||
 	format.id == PCF_ACCEL_W_INKBOUNDS))
+  {
     error_invalid_exit("accelerators");
+  }
   
   accelerators.noOverlap       = read_bool8();
   accelerators.constantMetrics = read_bool8();
@@ -509,10 +537,16 @@ char *get_property_string(const char *name)
   for (int i = 0; i < nProps; i++)
   {
     if (strcmp(name, props[i].name.s) == 0)
+    {
       if (props[i].isStringProp)
+      {
 	return props[i].value.s;
+      }
       else
+      {
 	error_invalid_exit("property_string");
+      }
+    }
   }
   return NULL;
 }
@@ -524,10 +558,16 @@ int32 get_property_value(const char *name)
   for (int i = 0; i < nProps; i++)
   {
     if (strcmp(name, props[i].name.s) == 0)
+    {
       if (props[i].isStringProp)
+      {
 	error_invalid_exit("property_value");
+      }
       else
+      {
 	return props[i].value.v;
+      }
+    }
   }
   return -1;
 }
@@ -539,10 +579,16 @@ bool is_exist_property_value(const char *name)
   for (int i = 0; i < nProps; i++)
   {
     if (strcmp(name, props[i].name.s) == 0)
+    {
       if (props[i].isStringProp)
+      {
 	return false;
+      }
       else
+      {
 	return true;
+      }
+    }
   }
   return false;
 }
@@ -565,23 +611,39 @@ int main(int argc, char *argv[])
   for (i = 1; i < argc; i++)
   {
     if (argv[i][0] == '-')
+    {
       if (argv[i][1] == 'v')
+      {
 	verbose = true;
+      }
       else if (i + 1 == argc || argv[i][1] != 'o' || ofilename)
+      {
 	return usage_exit();
+      }
       else
+      {
 	ofilename = argv[++i];
+      }
+    }
     else
+    {
       if (ifilename)
+      {
 	return usage_exit();
+      }
       else
+      {
 	ifilename = argv[i];
+      }
+    }
   }
   if (ifilename)
   {
     ifp = fopen(ifilename, "rb");
     if (!ifp)
+    {
       return error_exit("failed to open input pcf file");
+    }
   }
   else
   {
@@ -593,7 +655,9 @@ int main(int argc, char *argv[])
       (version >> 16) == 0x1f8b)    // gzip'ed
   {
     if (!ifilename)
+    {
       return error_exit("stdin is gzip'ed or compress'ed\n");
+    }
     fclose(ifp);
     char buf[1024];
     sprintf(buf, "gzip -dc %s", ifilename); // TODO
@@ -601,25 +665,35 @@ int main(int argc, char *argv[])
     _setmode(fileno(ifp), O_BINARY);
     read_bytes = 0;
     if (!ifp)
+    {
       return error_exit("failed to execute gzip\n");
+    }
   }
 
   if (ofilename)
   {
     ofp = fopen(ofilename, "wb");
     if (!ofp)
+    {
       return error_exit("failed to open output bdf file");
+    }
   }
   else
+  {
     ofp = stdout;
+  }
 
   // read PCF file ////////////////////////////////////////////////////////////
 
   // read table of contents
   if (read_bytes == 0)
+  {
     version = read_int32_big();
+  }
   if (version != make_int32(1, 'f', 'c', 'p'))
+  {
     error_exit("this is not PCF file format");
+  }
   nTables = read_int32_little();
   check_memory((tables = new table_t[nTables]));
   for (i = 0; i < nTables; i++)
@@ -632,13 +706,21 @@ int main(int argc, char *argv[])
   
   // read properties section
   if (!seek(PCF_PROPERTIES))
+  {
     error_exit("PCF_PROPERTIES does not found");
+  }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "PCF_PROPERTIES\n");
+    }
+  }
   format = read_format32_little();
   if (!(format.id == PCF_DEFAULT_FORMAT))
+  {
     error_invalid_exit("properties(format)");
+  }
   nProps = read_int32();
   check_memory((props = new props_t[nProps]));
   for (i = 0; i < nProps; i++)
@@ -655,43 +737,71 @@ int main(int argc, char *argv[])
   for (i = 0; i < nProps; i++)
   {
     if (stringSize <= props[i].name.v)
+    {
       error_invalid_exit("properties(name)");
+    }
     props[i].name.s = string + props[i].name.v;
     if (verbose)
+    {
       fprintf(stderr, "\t%s ", props[i].name.s);
+    }
     if (props[i].isStringProp)
     {
       if (stringSize <= props[i].value.v)
+      {
 	error_invalid_exit("properties(value)");
+      }
       props[i].value.s = string + props[i].value.v;
       if (verbose)
+      {
 	fprintf(stderr, "\"%s\"\n", props[i].value.s);
+      }
     }
     else
+    {
       if (verbose)
+      {
 	fprintf(stderr, "%d\n", props[i].value.v);
+      }
+    }
   }
   
   // read old accelerators section
   if (!is_exist_section(PCF_BDF_ACCELERATORS))
+  {
     if (!seek(PCF_ACCELERATORS))
+    {
       error_exit("PCF_ACCELERATORS and PCF_BDF_ACCELERATORS do not found");
+    }
     else
     {
       if (verbose)
+      {
 	fprintf(stderr, "PCF_ACCELERATORS\n");
+      }
       read_accelerators();
     }
+  }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "(PCF_ACCELERATORS)\n");
+    }
+  }
   
   // read metrics section
   if (!seek(PCF_METRICS))
+  {
     error_exit("PCF_METRICS does not found");
+  }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "PCF_METRICS\n");
+    }
+  }
   format = read_format32_little();
   switch (format.id)
   {
@@ -701,47 +811,75 @@ int main(int argc, char *argv[])
       nMetrics = read_int32();
       check_memory((metrics = new metric_t[nMetrics]));
       for (i = 0; i < nMetrics; i++)
+      {
 	read_metric(&metrics[i]);
+      }
       break;
     case PCF_COMPRESSED_METRICS:
       if (verbose)
+      {
 	fprintf(stderr, "\tPCF_COMPRESSED_METRICS\n");
+      }
       nMetrics = read_int16();
       check_memory((metrics = new metric_t[nMetrics]));
       for (i = 0; i < nMetrics; i++)
+      {
 	read_compressed_metric(&metrics[i]);
+      }
       break;
   }
   if (verbose)
+  {
     fprintf(stderr, "\tnMetrics = %d\n", nMetrics);
+  }
   fontbbx = metrics[0];
   for (i = 1; i < nMetrics; i++)
   {
     if (metrics[i].leftSideBearing < fontbbx.leftSideBearing)
+    {
       fontbbx.leftSideBearing = metrics[i].leftSideBearing;
+    }
     if (fontbbx.rightSideBearing < metrics[i].rightSideBearing)
+    {
       fontbbx.rightSideBearing = metrics[i].rightSideBearing;
+    }
     if (fontbbx.ascent < metrics[i].ascent)
+    {
       fontbbx.ascent = metrics[i].ascent;
+    }
     if (fontbbx.descent < metrics[i].descent)
+    {
       fontbbx.descent = metrics[i].descent;
+    }
   }
   
   // read bitmaps section
   if (!seek(PCF_BITMAPS))
+  {
     error_exit("PCF_BITMAPS does not found");
+  }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "PCF_BITMAPS\n");
+    }
+  }
   format = read_format32_little();
   if (!(format.id == PCF_DEFAULT_FORMAT))
+  {
     error_invalid_exit("bitmaps");
+  }
   nBitmaps = read_int32();
   check_memory((bitmapOffsets = new uint32[nBitmaps]));
   for (i = 0; i < nBitmaps; i++)
+  {
     bitmapOffsets[i] = read_uint32();
+  }
   for (i = 0; i < GLYPHPADOPTIONS; i++)
+  {
     bitmapSizes[i] = read_uint32();
+  }
   bitmapSize = bitmapSizes[format.glyph];
   check_memory((bitmaps = new byte8[bitmapSize]));
   read_byte8s(bitmaps, bitmapSize);
@@ -756,25 +894,33 @@ int main(int argc, char *argv[])
   if (format.bit != BDF_format.bit)
   {
     if (verbose)
+    {
       fprintf(stderr, "\tbit_order_invert()\n");
+    }
     bit_order_invert(bitmaps, bitmapSize);
   }
   if ((format.bit == format.byte) !=  (BDF_format.bit == BDF_format.byte))
+  {
     switch (1 << (BDF_format.bit == BDF_format.byte ?
 		  format.scan : BDF_format.scan))
     {
       case 1: break;
       case 2:
 	if (verbose)
+	{
 	  fprintf(stderr, "\ttwo_byte_swap()\n");
+	}
 	two_byte_swap(bitmaps, bitmapSize);
 	break;
       case 4:
 	if (verbose)
+	{
 	  fprintf(stderr, "\tfour_byte_swap()\n");
+	}
 	four_byte_swap(bitmaps, bitmapSize);
 	break;
     }
+  }
   //
   for (i = 0; i < nMetrics; i++)
   {
@@ -786,13 +932,21 @@ int main(int argc, char *argv[])
   
   // read encodings section
   if (!seek(PCF_BDF_ENCODINGS))
+  {
     error_exit("PCF_BDF_ENCODINGS does not found");
+  }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "PCF_ENCODINGS\n");
+    }
+  }
   format = read_format32_little();
   if (!(format.id == PCF_DEFAULT_FORMAT))
+  {
     error_invalid_exit("encoding");
+  }
   firstCol  = read_int16();
   lastCol   = read_int16();
   firstRow  = read_int16();
@@ -812,49 +966,73 @@ int main(int argc, char *argv[])
   {
     encodings[i] = read_int16();
     if (encodings[i] != NO_SUCH_CHAR)
+    {
       nValidEncodings ++;
+    }
   }
 
   // read swidths section
   if (seek(PCF_SWIDTHS))
   {
     if (verbose)
+    {
       fprintf(stderr, "PCF_SWIDTHS\n");
+    }
     format = read_format32_little();
     if (!(format.id == PCF_DEFAULT_FORMAT))
+    {
       error_invalid_exit("encoding");
+    }
     nSwidths = read_int32();
     if (nSwidths != nMetrics)
+    {
       error_exit("nSwidths != nMetrics");
+    }
     for (i = 0; i < nSwidths; i++)
+    {
       metrics[i].swidth = read_int32();
+    }
   }
   else
   {
     if (verbose)
+    {
       fprintf(stderr, "no PCF_SWIDTHS\n");
+    }
     int32 rx = get_property_value("RESOLUTION_X");
     if (rx <= 0)
+    {
       rx = (int)(get_property_value("RESOLUTION") / 100.0 * 72.27) ;
+    }
     double p = get_property_value("POINT_SIZE") / 10.0;
     for (i = 0; i < nSwidths; i++)
+    {
       metrics[i].swidth =
 	(int)(metrics[i].characterWidth / (rx / 72.27) / (p / 1000));
+    }
   }
   
   // read glyph names section
   if (seek(PCF_GLYPH_NAMES))
   {
     if (verbose)
+    {
       fprintf(stderr, "PCF_GLYPH_NAMES\n");
+    }
     format = read_format32_little();
     if (!(format.id == PCF_DEFAULT_FORMAT))
+    {
       error_invalid_exit("encoding");
+    }
     nGlyphNames = read_int32();
     if (nGlyphNames != nMetrics)
+    {
       error_exit("nGlyphNames != nMetrics");
+    }
     for (i = 0; i < nGlyphNames; i++)
+    {
       metrics[i].glyphName.v = read_int32();
+    }
     glyphNamesSize = read_int32();
     check_memory((glyphNames = new char[glyphNamesSize + 1]));
     read_byte8s((byte8 *)glyphNames, glyphNamesSize);
@@ -862,24 +1040,36 @@ int main(int argc, char *argv[])
     for (i = 0; i < nGlyphNames; i++)
     {
       if (glyphNamesSize <= metrics[i].glyphName.v)
+      {
 	error_invalid_exit("glyphNames");
+      }
       metrics[i].glyphName.s = glyphNames + metrics[i].glyphName.v;
     }
   }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "no PCF_GLYPH_NAMES\n");
+    }
+  }
   
   // read BDF style accelerators section
   if (seek(PCF_BDF_ACCELERATORS))
   {
     if (verbose)
+    {
       fprintf(stderr, "PCF_BDF_ACCELERATORS\n");
+    }
     read_accelerators();
   }
   else
+  {
     if (verbose)
+    {
       fprintf(stderr, "no PCF_BDF_ACCELERATORS\n");
+    }
+  }
   
   // write bdf file ///////////////////////////////////////////////////////////
   
@@ -889,7 +1079,9 @@ int main(int argc, char *argv[])
   int32 ry = get_property_value("RESOLUTION_Y");
   if (!is_exist_property_value("RESOLUTION_X") ||
       !is_exist_property_value("RESOLUTION_Y"))
+  {
     rx = ry = (int)(get_property_value("RESOLUTION") / 100.0 * 72.27) ;
+  }
   fprintf(ofp, "SIZE %d %d %d\n",
 	  get_property_value("POINT_SIZE") / 10, rx, ry);
   fprintf(ofp, "FONTBOUNDINGBOX %d %d %d %d\n\n",
@@ -899,23 +1091,37 @@ int main(int argc, char *argv[])
   int nPropsd = -1;
   if (!is_exist_property_value("DEFAULT_CHAR") &&
       defaultCh != NO_SUCH_CHAR)
+  {
     nPropsd ++;
-  if (!is_exist_property_value("FONT_DESCENT")) nPropsd ++;
-  if (!is_exist_property_value("FONT_ASCENT"))  nPropsd ++;
+  }
+  if (!is_exist_property_value("FONT_DESCENT"))
+  {
+    nPropsd ++;
+  }
+  if (!is_exist_property_value("FONT_ASCENT"))
+  {
+    nPropsd ++;
+  }
   if (is_exist_property_value("RESOLUTION_X") &&
       is_exist_property_value("RESOLUTION_Y") &&
       is_exist_property_value("RESOLUTION"))
+  {
     nPropsd --;
+  }
     
   fprintf(ofp, "STARTPROPERTIES %d\n", nProps + nPropsd);
   for (i = 0; i < nProps; i++)
   {
     if (strcmp(props[i].name.s, "FONT") == 0)
+    {
       continue;
+    }
     else if (strcmp(props[i].name.s, "RESOLUTION") == 0 &&
 	     is_exist_property_value("RESOLUTION_X") &&
 	     is_exist_property_value("RESOLUTION_Y"))
+    {
       continue;
+    }
     fprintf(ofp, "%s ", props[i].name.s);
     if (props[i].isStringProp)
     {
@@ -923,22 +1129,32 @@ int main(int argc, char *argv[])
       for (const char *p = props[i].value.s; *p; ++ p)
       {
 	if (*p == '"')
+	{
 	  fprintf(ofp, "\"");
+	}
 	fprintf(ofp, "%c", *p);
       }
       fprintf(ofp, "\"\n");
     }
     else
+    {
       fprintf(ofp, "%d\n", props[i].value.v);
+    }
   }
   
   if (!is_exist_property_value("DEFAULT_CHAR") &&
       defaultCh != NO_SUCH_CHAR)
+  {
     fprintf(ofp, "DEFAULT_CHAR %d\n", defaultCh);
+  }
   if (!is_exist_property_value("FONT_DESCENT"))
+  {
     fprintf(ofp, "FONT_DESCENT %d\n", accelerators.fontDescent);
+  }
   if (!is_exist_property_value("FONT_ASCENT"))
+  {
     fprintf(ofp, "FONT_ASCENT %d\n", accelerators.fontAscent);
+  }
   fprintf(ofp, "ENDPROPERTIES\n\n");
   
   fprintf(ofp, "CHARS %d\n\n", nValidEncodings);
@@ -946,25 +1162,35 @@ int main(int argc, char *argv[])
   for (i = 0; i < nEncodings; i++)
   {
     if (encodings[i] == NO_SUCH_CHAR)
+    {
       continue;
+    }
     
     int col = i % (lastCol - firstCol + 1) + firstCol;
     int row = i / (lastCol - firstCol + 1) + firstRow;
     uint16 charcode = make_charcode(row, col);
     metric_t &m = metrics[encodings[i]];
     if (m.glyphName.s)
+    {
       fprintf(ofp, "STARTCHAR %s\n", m.glyphName.s);
+    }
     else if (0x21 <= charcode && charcode <= 0x7e)
+    {
       fprintf(ofp, "STARTCHAR %c\n", (char)charcode);
+    }
     else
+    {
       fprintf(ofp, "STARTCHAR %04X\n", charcode);
+    }
     fprintf(ofp, "ENCODING %d\n", charcode);
     fprintf(ofp, "SWIDTH %d %d\n", m.swidth, 0);
     fprintf(ofp, "DWIDTH %d %d\n", m.characterWidth, 0);
     fprintf(ofp, "BBX %d %d %d %d\n",
 	    m.widthBits(), m.height(), m.leftSideBearing, -m.descent);
     if (0 < m.attributes)
+    {
       fprintf(ofp, "ATTRIBUTES %4X\n", (uint16)m.attributes);
+    }
     fprintf(ofp, "BITMAP\n");
 
     int widthBytes = m.widthBytes(format);
@@ -976,7 +1202,9 @@ int main(int argc, char *argv[])
       for (int c = 0; c < widthBytes; c++)
       {
 	if (c < w)
+	{
 	  fprintf(ofp, "%02X", *b);
+	}
 	b++;
       }
       fprintf(ofp, "\n");
