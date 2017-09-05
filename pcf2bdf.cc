@@ -17,7 +17,6 @@
 #elif defined(__CYGWIN__) // Cygnus GNU Win32 gcc
 #  include <io.h>
 #  include <sys/fcntl.h>
-#  define _setmode setmode
 
 #else
 #  define _setmode(fd, mode)
