@@ -65,6 +65,11 @@ COPYRIGHT
 
 HISTORY
 
+	1.06 2019/08/27
+
+	- Fixed: too-long-path-to-input.pcf.gz causes stack-based buffer
+	  overflow.
+
 	1.05 2015/05/18
 
 	- The size should come from POINT_SIZE instead of PIXEL_SIZE.

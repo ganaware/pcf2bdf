@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #if defined(_MSC_VER) // Microsoft Visual C++
 #  include <io.h>
@@ -601,6 +602,21 @@ int usage_exit(void)
 }
 
 
+std::string escape_quote(const char *p)
+{
+  std::string result;
+  for (; *p; ++ p)
+  {
+    if (*p == '\'')
+    {
+      result.append("\\");
+    }
+    result.append(1, *p);
+  }
+  return result;
+}
+
+
 int main(int argc, char *argv[])
 {
   int i;
@@ -659,9 +675,10 @@ int main(int argc, char *argv[])
       return error_exit("stdin is gzip'ed or compress'ed\n");
     }
     fclose(ifp);
-    char buf[1024];
-    sprintf(buf, "gzip -dc %s", ifilename); // TODO
-    ifp = popen(buf, "r");
+    std::string cmd = "gzip -dc '";
+    cmd.append(escape_quote(ifilename));
+    cmd.append("'");
+    ifp = popen(cmd.c_str(), "r");
     _setmode(fileno(ifp), O_BINARY);
     read_bytes = 0;
     if (!ifp)
