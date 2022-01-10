@@ -226,6 +226,23 @@ int error_invalid_exit(const char *str)
   return 1;
 }
 
+void check_int32_min(const char *indent, const char *str, int32 value, int32 min)
+{
+  if (!(min <= value))
+  {
+    fprintf(stderr, "pcf2bdf: <%s>=%d is out of range (must be >= %d)\n",
+            str, value, min);
+    exit(1);
+  }
+  else
+  {
+    if (verbose)
+    {
+      fprintf(stderr, "%s%s = %d\n", indent, str, value);
+    }
+  }
+}
+
 int check_memory(void *ptr)
 {
   if (!ptr)
@@ -712,6 +729,7 @@ int main(int argc, char *argv[])
     error_exit("this is not PCF file format");
   }
   nTables = read_int32_little();
+  check_int32_min("", "nTables", nTables, 1);
   check_memory((tables = new table_t[nTables]));
   for (i = 0; i < nTables; i++)
   {
@@ -739,6 +757,7 @@ int main(int argc, char *argv[])
     error_invalid_exit("properties(format)");
   }
   nProps = read_int32();
+  check_int32_min("\t", "nProps", nProps, 1);
   check_memory((props = new props_t[nProps]));
   for (i = 0; i < nProps; i++)
   {
@@ -748,6 +767,7 @@ int main(int argc, char *argv[])
   }
   skip(3 - (((4 + 1 + 4) * nProps + 3) % 4));
   stringSize = read_int32();
+  check_int32_min("\t", "stringSize", stringSize, 0);
   check_memory((string = new char[stringSize + 1]));
   read_byte8s((byte8 *)string, stringSize);
   string[stringSize] = '\0';
@@ -826,6 +846,7 @@ int main(int argc, char *argv[])
       error_invalid_exit("metrics");
     case PCF_DEFAULT_FORMAT:
       nMetrics = read_int32();
+      check_int32_min("\t", "nMetrics", nMetrics, 1);
       check_memory((metrics = new metric_t[nMetrics]));
       for (i = 0; i < nMetrics; i++)
       {
@@ -838,16 +859,13 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\tPCF_COMPRESSED_METRICS\n");
       }
       nMetrics = read_int16();
+      check_int32_min("\t", "nMetrics", nMetrics, 1);
       check_memory((metrics = new metric_t[nMetrics]));
       for (i = 0; i < nMetrics; i++)
       {
 	read_compressed_metric(&metrics[i]);
       }
       break;
-  }
-  if (verbose)
-  {
-    fprintf(stderr, "\tnMetrics = %d\n", nMetrics);
   }
   fontbbx = metrics[0];
   for (i = 1; i < nMetrics; i++)
@@ -888,6 +906,7 @@ int main(int argc, char *argv[])
     error_invalid_exit("bitmaps");
   }
   nBitmaps = read_int32();
+  check_int32_min("\t", "nBitmaps", nBitmaps, nMetrics);
   check_memory((bitmapOffsets = new uint32[nBitmaps]));
   for (i = 0; i < nBitmaps; i++)
   {
@@ -898,6 +917,7 @@ int main(int argc, char *argv[])
     bitmapSizes[i] = read_uint32();
   }
   bitmapSize = bitmapSizes[format.glyph];
+  check_int32_min("\t", "bitmapSize", bitmapSize, 0);
   check_memory((bitmaps = new byte8[bitmapSize]));
   read_byte8s(bitmaps, bitmapSize);
   //
@@ -977,6 +997,14 @@ int main(int argc, char *argv[])
     fprintf(stderr, "\tlastRow   = %X\n", lastRow);
     fprintf(stderr, "\tdefaultCh = %X\n", defaultCh);
   }
+  if (!(firstCol <= lastCol))
+  {
+    error_invalid_exit("firstCol, lastCol");
+  }
+  if (!(firstRow <= lastRow))
+  {
+    error_invalid_exit("firstRow, lastRow");
+  }
   nEncodings = (lastCol - firstCol + 1) * (lastRow - firstRow + 1);
   check_memory((encodings = new uint16[nEncodings]));
   for (i = 0; i < nEncodings; i++)
@@ -1022,6 +1050,7 @@ int main(int argc, char *argv[])
       rx = (int)(get_property_value("RESOLUTION") / 100.0 * 72.27) ;
     }
     double p = get_property_value("POINT_SIZE") / 10.0;
+    nSwidths = nMetrics;
     for (i = 0; i < nSwidths; i++)
     {
       metrics[i].swidth =
@@ -1051,6 +1080,7 @@ int main(int argc, char *argv[])
       metrics[i].glyphName.v = read_int32();
     }
     glyphNamesSize = read_int32();
+    check_int32_min("\t", "glyphNamesSize", glyphNamesSize, 0);
     check_memory((glyphNames = new char[glyphNamesSize + 1]));
     read_byte8s((byte8 *)glyphNames, glyphNamesSize);
     glyphNames[glyphNamesSize] = '\0';
