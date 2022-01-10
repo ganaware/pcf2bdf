@@ -1186,6 +1186,10 @@ int main(int argc, char *argv[])
     int col = i % (lastCol - firstCol + 1) + firstCol;
     int row = i / (lastCol - firstCol + 1) + firstRow;
     uint16 charcode = make_charcode(row, col);
+    if (!(encodings[i] < nMetrics))
+    {
+      error_invalid_exit("encodings");
+    }
     metric_t &m = metrics[encodings[i]];
     if (m.glyphName.s)
     {
