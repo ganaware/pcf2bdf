@@ -65,6 +65,13 @@ COPYRIGHT
 
 HISTORY
 
+	1.07 2022/02/23
+
+	- CVE-2022-23318
+	  Fixed: heap buffer overflow on invalid intput pcf.
+	- CVE-2022-23319
+	  Fixed: segmentation fault on invalid intput pcf.
+	
 	1.06 2019/08/27
 
 	- Fixed: too-long-path-to-input.pcf.gz causes stack-based buffer
