@@ -20,3 +20,11 @@ install: all
 	$(INSTALL_PROGRAM) pcf2bdf $(DESTDIR)$(BINPATH)
 	$(INSTALL_DIR) $(DESTDIR)$(MANPATH)
 	$(INSTALL_DATA) pcf2bdf.man $(DESTDIR)$(MANPATH)/pcf2bdf.1
+
+test:	pcf2bdf
+	for i in /usr/share/fonts/X11/misc/*.pcf*; do \
+		./pcf2bdf -v $$i > /dev/null 2>&1 || (echo test failed: $$i; exit 1) ;\
+	done
+	for i in tests/error_samples/*; do \
+		( ./pcf2bdf -v $$i > /dev/null 2>&1 && (echo test failed: $$i; exit 1) || exit 0) ;\
+	done
